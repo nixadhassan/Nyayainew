@@ -1,0 +1,4 @@
+PORT=10000
+SUPABASE_URL=https://your-supabase-project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your-supabase-high-privilege-service-role-key
+ANTHROPIC_API_KEY=your-claude-api-key
