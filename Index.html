@@ -1,0 +1,2530 @@
+<meta name='viewport' content='width=device-width, initial-scale=1'/><!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Nyay AI -- Legal Document Analyzer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" crossorigin="anonymous"></script>
+<!-- Cashfree Payment SDK -->
+<script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
+<script>
+// Load Supabase with fallback CDNs
+(function() {
+  function loadScript(src, onload, onerror) {
+    var s = document.createElement('script');
+    s.src = src; s.crossOrigin = 'anonymous';
+    s.onload = onload; s.onerror = onerror;
+    document.head.appendChild(s);
+  }
+  var CDN1 = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';
+  var CDN2 = 'https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js';
+  loadScript(CDN1, function() {
+    console.log('[Nyay AI] Supabase loaded from jsdelivr');
+    window._supabaseReady = true;
+  }, function() {
+    console.warn('[Nyay AI] jsdelivr failed, trying unpkg...');
+    loadScript(CDN2, function() {
+      console.log('[Nyay AI] Supabase loaded from unpkg');
+      window._supabaseReady = true;
+    }, function() {
+      console.error('[Nyay AI] Both Supabase CDNs failed. Auth/DB features will be unavailable.');
+      window._supabaseReady = false;
+    });
+  });
+})();
+</script></script>
+<style>
+  :root {
+    --ink: #0d0d0d;
+    --paper: #faf8f4;
+    --cream: #f2ede4;
+    --gold: #b8860b;
+    --gold-light: #d4a017;
+    --gold-pale: #f5ecd0;
+    --rust: #8b3a2a;
+    --sage: #4a6741;
+    --steel: #3d5266;
+    --muted: #7a7068;
+    --border: #ddd5c4;
+    --white: #ffffff;
+    --shadow: 0 4px 24px rgba(13,13,13,0.08);
+    --shadow-lg: 0 12px 48px rgba(13,13,13,0.14);
+    --radius: 12px;
+    --radius-lg: 20px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── PATTERN BACKGROUND ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      radial-gradient(circle at 20% 20%, rgba(184,134,11,0.04) 0%, transparent 50%),
+      radial-gradient(circle at 80% 80%, rgba(61,82,102,0.04) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(250,248,244,0.92);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 64px;
+  }
+
+  .nav-brand {
+    display: flex; align-items: center; gap: 10px;
+    text-decoration: none; color: inherit;
+  }
+
+    .nav-logo {
+    display: flex; align-items: center; flex-shrink: 0;
+  }
+
+  .nav-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 22px; font-weight: 700;
+    letter-spacing: -0.3px;
+  }
+
+  .nav-title span { color: var(--gold); }
+
+  .nav-actions { display: flex; gap: 10px; align-items: center; }
+
+  /* ── BUTTONS ── */
+  .btn {
+    padding: 9px 20px;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px; font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s ease;
+    display: inline-flex; align-items: center; gap: 7px;
+    text-decoration: none;
+  }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover { background: var(--cream); color: var(--ink); }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--gold), var(--gold-light));
+    color: white;
+    box-shadow: 0 2px 8px rgba(184,134,11,0.3);
+  }
+  .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(184,134,11,0.4);
+  }
+
+  .btn-danger {
+    background: var(--rust);
+    color: white;
+  }
+  .btn-danger:hover { background: #a3452f; }
+
+  .btn-outline {
+    background: transparent;
+    color: var(--gold);
+    border: 1.5px solid var(--gold);
+  }
+  .btn-outline:hover { background: var(--gold-pale); }
+
+  .btn-lg { padding: 13px 28px; font-size: 15px; border-radius: 10px; }
+  .btn-sm { padding: 6px 14px; font-size: 13px; }
+
+  .btn:disabled {
+    opacity: 0.5; cursor: not-allowed;
+    transform: none !important;
+  }
+
+  /* ── PAGES ── */
+  .page { display: none; position: relative; z-index: 1; }
+  .page.active { display: block; }
+
+  /* ── HERO ── */
+  #page-home {
+    display: flex; flex-direction: column;
+  }
+
+  .hero {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    text-align: center;
+    padding: 60px 24px 40px;
+  }
+
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--gold-pale);
+    color: var(--gold);
+    border: 1px solid rgba(184,134,11,0.2);
+    border-radius: 100px;
+    padding: 6px 14px;
+    font-size: 12px; font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    margin-bottom: 28px;
+  }
+
+  .hero-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(48px, 6vw, 84px);
+    font-weight: 700;
+    line-height: 1.05;
+    letter-spacing: -1px;
+    max-width: 780px;
+    margin-bottom: 20px;
+  }
+
+  .hero-title .accent { color: var(--gold); font-style: italic; }
+
+  .hero-sub {
+    font-size: 17px; color: var(--muted);
+    max-width: 520px; line-height: 1.65;
+    margin-bottom: 40px;
+  }
+
+  .hero-cta { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+
+  .hero-langs {
+    margin-top: 56px;
+    display: flex; align-items: center; gap: 10px;
+    flex-wrap: wrap; justify-content: center;
+  }
+
+  .lang-pill {
+    background: var(--cream);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 5px 13px;
+    font-size: 13px; color: var(--muted);
+  }
+
+  .features {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 20px;
+    padding: 60px 32px;
+    max-width: 1100px; margin: 0 auto;
+    width: 100%;
+  }
+
+  .feature-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    transition: all 0.25s ease;
+  }
+
+  .feature-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-lg);
+    border-color: rgba(184,134,11,0.25);
+  }
+
+  .feature-icon {
+    width: 48px; height: 48px;
+    background: var(--gold-pale);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; margin-bottom: 16px;
+  }
+
+  .feature-card h3 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 19px; font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  .feature-card p { font-size: 13.5px; color: var(--muted); line-height: 1.6; }
+
+  /* ── PRICING BANNER ── */
+  .pricing-banner {
+    background: linear-gradient(135deg, var(--steel), #2a3d52);
+    color: white;
+    padding: 32px;
+    text-align: center;
+    margin: 0 32px 60px;
+    border-radius: var(--radius-lg);
+    max-width: 1036px;
+    margin-left: auto; margin-right: auto;
+  }
+
+  .pricing-banner h2 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 28px; margin-bottom: 10px;
+  }
+
+  .pricing-banner p { font-size: 14px; opacity: 0.8; margin-bottom: 20px; }
+
+  .pricing-pills {
+    display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;
+  }
+
+  .pricing-pill {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 100px;
+    padding: 8px 20px;
+    font-size: 14px; font-weight: 500;
+  }
+
+  .pricing-pill.highlight {
+    background: var(--gold);
+    border-color: var(--gold);
+    font-weight: 600;
+  }
+
+  /* ── AUTH MODAL ── */
+  .modal-overlay {
+    display: none;
+    position: fixed; inset: 0; z-index: 999;
+    background: rgba(13,13,13,0.6);
+    backdrop-filter: blur(4px);
+    align-items: center; justify-content: center;
+    padding: 20px;
+  }
+
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    padding: 40px;
+    width: 100%; max-width: 420px;
+    box-shadow: var(--shadow-lg);
+    animation: slideUp 0.25s ease;
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .modal-logo {
+    text-align: center; margin-bottom: 28px;
+  }
+
+  .modal-logo .big-logo {
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 12px;
+  }
+
+  .modal-logo h2 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 24px; font-weight: 700;
+  }
+
+  .modal-logo p { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+  .tab-row {
+    display: flex;
+    background: var(--cream);
+    border-radius: 8px;
+    padding: 3px; margin-bottom: 24px;
+  }
+
+  .tab-btn {
+    flex: 1; padding: 8px;
+    border-radius: 6px; border: none;
+    background: transparent;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px; font-weight: 500;
+    cursor: pointer; color: var(--muted);
+    transition: all 0.2s;
+  }
+
+  .tab-btn.active {
+    background: white;
+    color: var(--ink);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+  }
+
+  .form-group { margin-bottom: 16px; }
+
+  .form-label {
+    display: block; font-size: 13px;
+    font-weight: 500; margin-bottom: 6px;
+    color: var(--ink);
+  }
+
+  .form-input {
+    width: 100%; padding: 11px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px; color: var(--ink);
+    background: var(--paper);
+    transition: border-color 0.2s;
+    outline: none;
+  }
+
+  .form-input:focus { border-color: var(--gold); }
+
+  .form-select {
+    width: 100%; padding: 11px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px; color: var(--ink);
+    background: var(--paper);
+    outline: none; cursor: pointer;
+  }
+
+  .form-select:focus { border-color: var(--gold); }
+
+  .modal-note {
+    font-size: 12px; color: var(--muted);
+    text-align: center; margin-top: 14px; line-height: 1.5;
+  }
+
+  /* ── DASHBOARD ── */
+  #page-dashboard {
+    min-height: calc(100vh - 64px);
+    max-width: 1100px; margin: 0 auto;
+    padding: 40px 24px;
+  }
+
+  .dash-header {
+    display: flex; align-items: center;
+    justify-content: space-between;
+    margin-bottom: 32px; flex-wrap: gap;
+  }
+
+  .dash-greeting h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 32px; font-weight: 700;
+  }
+
+  .dash-greeting p { font-size: 14px; color: var(--muted); margin-top: 4px; }
+
+  .credits-badge {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--gold-pale);
+    border: 1px solid rgba(184,134,11,0.3);
+    border-radius: 100px;
+    padding: 8px 16px;
+    font-size: 13px; font-weight: 600;
+    color: var(--gold);
+  }
+
+  .dash-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 24px;
+    max-width: 720px;
+  }
+
+  /* ── UPLOAD PANEL ── */
+  .panel {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+
+  .panel-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+  }
+
+  .panel-header h2 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 20px; font-weight: 700;
+  }
+
+  .panel-body { padding: 24px; }
+
+  .doc-type-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px; margin-bottom: 20px;
+  }
+
+  @media (max-width: 480px) {
+    .doc-type-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  .doc-type-btn {
+    padding: 10px 8px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    background: var(--paper);
+    font-size: 12px; font-weight: 500;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s;
+    color: var(--ink);
+  }
+
+  .doc-type-btn:hover { border-color: var(--gold); background: var(--gold-pale); }
+
+  .doc-type-btn.selected {
+    border-color: var(--gold);
+    background: var(--gold-pale);
+    color: var(--gold);
+    font-weight: 600;
+  }
+
+  .doc-type-btn .type-icon { font-size: 18px; display: block; margin-bottom: 4px; }
+
+  /* ── DROP ZONE ── */
+  .drop-zone {
+    border: 2px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 40px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    position: relative;
+    background: var(--paper);
+  }
+
+  .drop-zone:hover,
+  .drop-zone.dragover {
+    border-color: var(--gold);
+    background: var(--gold-pale);
+  }
+
+  .drop-zone input[type="file"] {
+    position: absolute; inset: 0;
+    opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+
+  .drop-icon { font-size: 40px; margin-bottom: 12px; }
+
+  .drop-zone h3 {
+    font-size: 15px; font-weight: 600; margin-bottom: 6px;
+  }
+
+  .drop-zone p { font-size: 13px; color: var(--muted); }
+
+  .file-list { margin-top: 16px; display: flex; flex-direction: column; gap: 8px; }
+
+  .file-item {
+    display: flex; align-items: center;
+    gap: 10px; padding: 10px 12px;
+    background: var(--cream);
+    border-radius: 8px; font-size: 13px;
+  }
+
+  .file-item .file-name { flex: 1; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .file-item .file-size { color: var(--muted); flex-shrink: 0; }
+  .file-item .file-remove {
+    background: none; border: none; cursor: pointer;
+    color: var(--muted); font-size: 16px; padding: 2px 4px;
+    border-radius: 4px; transition: all 0.15s;
+  }
+  .file-item .file-remove:hover { color: var(--rust); background: rgba(139,58,42,0.08); }
+
+  .text-upload-area {
+    margin-top: 16px;
+  }
+
+  .text-area {
+    width: 100%; min-height: 120px;
+    padding: 12px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px; line-height: 1.6;
+    resize: vertical;
+    background: var(--paper);
+    outline: none;
+  }
+
+  .text-area:focus { border-color: var(--gold); }
+
+  .upload-tabs {
+    display: flex; gap: 4px; margin-bottom: 16px;
+  }
+
+  .upload-tab {
+    padding: 7px 14px;
+    border-radius: 6px; border: 1px solid var(--border);
+    background: transparent;
+    font-size: 13px; cursor: pointer; font-weight: 500;
+    color: var(--muted); transition: all 0.2s;
+  }
+
+  .upload-tab.active {
+    background: var(--gold-pale);
+    border-color: var(--gold);
+    color: var(--gold);
+  }
+
+  .lang-row {
+    margin-top: 16px;
+    display: flex; align-items: center; gap: 12px;
+  }
+
+  .lang-row label { font-size: 13px; font-weight: 500; white-space: nowrap; }
+
+  .analyze-section { margin-top: 20px; }
+
+  /* ── ANALYSIS PROGRESS ── */
+  .analysis-progress {
+    display: none;
+    margin-top: 16px;
+  }
+
+  .progress-bar-wrap {
+    background: var(--cream);
+    border-radius: 100px;
+    height: 6px; overflow: hidden;
+  }
+
+  .progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--gold), var(--gold-light));
+    border-radius: 100px;
+    width: 0%;
+    transition: width 0.4s ease;
+  }
+
+  .progress-label {
+    font-size: 12px; color: var(--muted);
+    margin-top: 8px; text-align: center;
+  }
+
+  /* ── SIDEBAR ── */
+  .sidebar { display: flex; flex-direction: column; gap: 16px; }
+
+  .info-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+  }
+
+  .info-card h3 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 17px; font-weight: 700;
+    margin-bottom: 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  .step-list { list-style: none; }
+
+  .step-list li {
+    display: flex; align-items: flex-start; gap: 10px;
+    font-size: 13px; padding: 7px 0;
+    border-bottom: 1px solid var(--cream);
+    line-height: 1.5; color: var(--muted);
+  }
+
+  .step-list li:last-child { border-bottom: none; }
+
+  .step-num {
+    width: 20px; height: 20px; flex-shrink: 0;
+    background: var(--gold-pale);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; color: var(--gold);
+    margin-top: 1px;
+  }
+
+  .history-list { display: flex; flex-direction: column; gap: 8px; }
+
+  .history-item {
+    padding: 10px 12px;
+    background: var(--cream);
+    border-radius: 8px;
+    font-size: 13px; cursor: pointer;
+    transition: all 0.2s;
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  .history-item:hover { background: var(--gold-pale); }
+  .history-item .hist-icon { font-size: 16px; }
+  .history-item .hist-info { flex: 1; }
+  .history-item .hist-name { font-weight: 500; }
+  .history-item .hist-date { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  .empty-state {
+    text-align: center; padding: 20px 0;
+    font-size: 13px; color: var(--muted);
+  }
+
+  /* ── REPORT PAGE ── */
+  #page-report {
+    min-height: calc(100vh - 64px);
+    max-width: 900px; margin: 0 auto;
+    padding: 40px 24px;
+  }
+
+  .report-header {
+    display: flex; align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 28px; flex-wrap: wrap; gap: 16px;
+  }
+
+  .report-meta h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 30px; font-weight: 700;
+  }
+
+  .report-meta p { font-size: 13px; color: var(--muted); margin-top: 6px; }
+
+  .report-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+  .report-body {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    margin-bottom: 24px;
+  }
+
+  .report-content {
+    padding: 36px;
+    font-size: 14.5px;
+    line-height: 1.8;
+    color: var(--ink);
+  }
+
+  .report-content h2 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 22px; font-weight: 700;
+    margin: 28px 0 12px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--gold-pale);
+    color: var(--ink);
+  }
+
+  .report-content h2:first-child { margin-top: 0; }
+
+  .report-content h3 {
+    font-size: 15px; font-weight: 600; margin: 20px 0 8px;
+    color: var(--steel);
+  }
+
+  .report-content p { margin-bottom: 12px; }
+
+  .report-content ul, .report-content ol {
+    padding-left: 20px; margin-bottom: 12px;
+  }
+
+  .report-content li { margin-bottom: 6px; }
+
+  .report-content .risk-high {
+    background: rgba(139,58,42,0.08); border-left: 3px solid var(--rust);
+    padding: 10px 14px; border-radius: 0 6px 6px 0;
+    margin: 8px 0; font-size: 13.5px;
+  }
+
+  .report-content .risk-medium {
+    background: rgba(184,134,11,0.08); border-left: 3px solid var(--gold);
+    padding: 10px 14px; border-radius: 0 6px 6px 0;
+    margin: 8px 0; font-size: 13.5px;
+  }
+
+  .report-content .risk-low {
+    background: rgba(74,103,65,0.08); border-left: 3px solid var(--sage);
+    padding: 10px 14px; border-radius: 0 6px 6px 0;
+    margin: 8px 0; font-size: 13.5px;
+  }
+
+  .report-disclaimer {
+    background: var(--cream);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    font-size: 12.5px; color: var(--muted);
+    line-height: 1.6;
+    margin-bottom: 24px;
+  }
+
+  /* ── Q&A ── */
+  .qa-panel {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+
+  .qa-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+  }
+
+  .qa-messages {
+    padding: 20px 24px;
+    min-height: 200px; max-height: 400px;
+    overflow-y: auto;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+
+  .qa-msg {
+    max-width: 85%;
+    padding: 12px 16px;
+    border-radius: 12px;
+    font-size: 14px; line-height: 1.6;
+  }
+
+  .qa-msg.user {
+    background: var(--gold-pale);
+    border: 1px solid rgba(184,134,11,0.2);
+    align-self: flex-end;
+    color: var(--ink);
+  }
+
+  .qa-msg.ai {
+    background: var(--cream);
+    border: 1px solid var(--border);
+    align-self: flex-start;
+  }
+
+  .qa-msg.ai .ai-label {
+    font-size: 11px; font-weight: 600;
+    color: var(--gold); margin-bottom: 4px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+
+  .qa-input-row {
+    padding: 16px 24px;
+    border-top: 1px solid var(--border);
+    display: flex; gap: 10px;
+  }
+
+  .qa-input {
+    flex: 1; padding: 10px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px; outline: none;
+    background: var(--paper);
+  }
+
+  .qa-input:focus { border-color: var(--gold); }
+
+  /* ── DELETE CONFIRMATION ── */
+  .delete-section {
+    background: var(--white);
+    border: 1.5px solid rgba(139,58,42,0.2);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    margin-top: 24px;
+    display: flex; align-items: center;
+    justify-content: space-between; gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  .delete-section h3 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 19px; font-weight: 700;
+    color: var(--rust); margin-bottom: 6px;
+  }
+
+  .delete-section p { font-size: 13px; color: var(--muted); }
+
+  /* ── TOAST ── */
+  .toast-container {
+    position: fixed; bottom: 24px; right: 24px;
+    z-index: 9999; display: flex; flex-direction: column; gap: 8px;
+  }
+
+  .toast {
+    background: var(--ink); color: white;
+    padding: 12px 18px;
+    border-radius: 10px;
+    font-size: 13.5px; font-weight: 500;
+    box-shadow: var(--shadow-lg);
+    animation: toastIn 0.3s ease;
+    display: flex; align-items: center; gap: 8px;
+    max-width: 320px;
+  }
+
+  .toast.success { background: var(--sage); }
+  .toast.error { background: var(--rust); }
+  .toast.info { background: var(--steel); }
+
+  @keyframes toastIn {
+    from { opacity: 0; transform: translateX(20px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+
+  /* ── LOADING SPINNER ── */
+  .spinner {
+    width: 18px; height: 18px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: inline-block;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* ── PAYMENT MODAL ── */
+  .payment-note {
+    background: var(--gold-pale);
+    border: 1px solid rgba(184,134,11,0.3);
+    border-radius: 8px;
+    padding: 14px;
+    font-size: 13px;
+    margin-bottom: 16px;
+  }
+
+  .payment-note strong { color: var(--gold); }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--cream); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+  /* ── UTILITY ── */
+  .text-center { text-align: center; }
+  .mt-8 { margin-top: 8px; }
+  .mt-12 { margin-top: 12px; }
+  .mt-16 { margin-top: 16px; }
+  .mt-20 { margin-top: 20px; }
+  .divider { height: 1px; background: var(--border); margin: 20px 0; }
+  .badge {
+    display: inline-block; padding: 3px 10px;
+    border-radius: 100px; font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.4px;
+  }
+  .badge-gold { background: var(--gold-pale); color: var(--gold); }
+  .badge-green { background: rgba(74,103,65,0.12); color: var(--sage); }
+  .badge-red   { background: rgba(139,58,42,0.1); color: var(--rust); }
+  .badge-blue  { background: rgba(61,82,102,0.1); color: var(--steel); }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 480px) { .two-col { grid-template-columns: 1fr; } }
+
+  /* ═══════════════════════════════════════════════════════
+     MOBILE-FIRST RESPONSIVE OVERRIDES
+     All breakpoints: 480px (small phone), 600px (large phone)
+  ═══════════════════════════════════════════════════════ */
+
+  /* ── NAV ── */
+  @media (max-width: 600px) {
+    nav {
+      padding: 0 16px;
+      height: 56px;
+    }
+    .nav-title { font-size: 18px; }
+    .nav-logo  { height: 28px; }
+    .nav-actions { gap: 6px; }
+    .btn-ghost { padding: 7px 12px; font-size: 13px; }
+    .btn-primary { padding: 7px 14px; font-size: 13px; }
+    /* When logged in: hide email, keep sign-out */
+    #nav-actions span { display: none; }
+  }
+
+  /* ── HERO ── */
+  @media (max-width: 600px) {
+    .hero {
+      padding: 48px 20px 40px;
+    }
+    .hero-title {
+      font-size: clamp(36px, 10vw, 52px);
+      letter-spacing: -0.5px;
+      line-height: 1.08;
+    }
+    .hero-sub {
+      font-size: 15px;
+      margin-bottom: 28px;
+    }
+    .hero-cta {
+      flex-direction: column;
+      width: 100%;
+    }
+    .hero-cta .btn {
+      width: 100%;
+      justify-content: center;
+    }
+    .hero-langs {
+      margin-top: 36px;
+      gap: 7px;
+    }
+    .lang-pill { font-size: 12px; padding: 4px 10px; }
+    .hero-badge { font-size: 11px; margin-bottom: 20px; }
+  }
+
+  /* ── FEATURES GRID ── */
+  @media (max-width: 600px) {
+    .features {
+      grid-template-columns: 1fr;
+      padding: 32px 16px;
+      gap: 14px;
+    }
+    .feature-card { padding: 20px; }
+  }
+
+  /* ── PRICING BANNER ── */
+  @media (max-width: 600px) {
+    .pricing-banner {
+      margin: 0 16px 40px;
+      padding: 24px 20px;
+      border-radius: 16px;
+    }
+    .pricing-banner h2 { font-size: 22px; }
+    .pricing-pills { gap: 10px; }
+    .pricing-pill { font-size: 13px; padding: 7px 14px; }
+  }
+
+  /* ── AUTH MODAL ── */
+  @media (max-width: 600px) {
+    .modal-overlay { padding: 12px; align-items: flex-end; }
+    .modal {
+      padding: 28px 20px 24px;
+      border-radius: 20px 20px 0 0;   /* bottom-sheet style */
+      max-width: 100%;
+      max-height: 92vh;
+      overflow-y: auto;
+    }
+    .modal-logo { margin-bottom: 20px; }
+    .modal-logo .big-logo { width: 48px; height: 48px; font-size: 24px; }
+    .modal-logo h2 { font-size: 20px; }
+    .form-input, .form-select {
+      font-size: 16px; /* prevents iOS zoom */
+      padding: 13px 14px;
+    }
+    .two-col { grid-template-columns: 1fr; }
+  }
+
+  /* ── DASHBOARD ── */
+  @media (max-width: 600px) {
+    #page-dashboard { padding: 20px 16px 32px; }
+
+    .dash-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .dash-greeting h1 { font-size: 24px; }
+    .credits-badge { font-size: 12px; padding: 7px 14px; }
+
+    .panel-body { padding: 16px; }
+    .panel-header { padding: 16px; }
+    .panel-header h2 { font-size: 18px; }
+
+    /* Doc type grid: 2 cols on small phones */
+    .doc-type-grid { grid-template-columns: repeat(2, 1fr); gap: 7px; }
+    .doc-type-btn { padding: 10px 6px; font-size: 11px; }
+    .doc-type-btn .type-icon { font-size: 16px; }
+
+    /* Drop zone: more compact */
+    .drop-zone { padding: 28px 16px; }
+    .drop-icon { font-size: 32px; margin-bottom: 8px; }
+    .drop-zone h3 { font-size: 14px; }
+    .drop-zone p { font-size: 12px; }
+
+    /* Upload tabs: full width */
+    .upload-tabs { width: 100%; }
+    .upload-tab { flex: 1; text-align: center; padding: 8px 10px; font-size: 12px; }
+
+    /* Language row: stack on tiny screens */
+    .lang-row { flex-wrap: wrap; gap: 8px; }
+    .lang-row label { width: 100%; }
+    .form-select { font-size: 16px; } /* prevents iOS zoom */
+
+    /* Analyse button: full width, taller tap target */
+    #analyze-btn { width: 100%; justify-content: center; padding: 15px; font-size: 15px; }
+
+    /* Sidebar below on mobile — already done by dash-grid media query,
+       but add spacing */
+    .sidebar { gap: 12px; }
+    .info-card { padding: 16px; }
+    .info-card h3 { font-size: 15px; }
+  }
+
+  /* ── REPORT PAGE ── */
+  @media (max-width: 600px) {
+    #page-report { padding: 16px 14px 40px; }
+
+    .report-header {
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .report-meta h1 { font-size: 22px; }
+    .report-actions {
+      width: 100%;
+    }
+    .report-actions .btn {
+      flex: 1;
+      justify-content: center;
+      font-size: 13px;
+      padding: 10px 14px;
+    }
+
+    .report-content {
+      padding: 20px 16px;
+      font-size: 14px;
+      line-height: 1.75;
+    }
+    .report-content h2 { font-size: 18px; }
+    .report-content h3 { font-size: 14px; }
+
+    .report-disclaimer { padding: 12px 14px; font-size: 12px; }
+
+    /* Q&A */
+    .qa-header { padding: 14px 16px; }
+    .qa-messages {
+      padding: 14px 16px;
+      max-height: 280px;
+      min-height: 140px;
+    }
+    .qa-msg { max-width: 92%; font-size: 13.5px; padding: 10px 13px; }
+    .qa-input-row { padding: 12px 14px; gap: 8px; }
+    .qa-input { font-size: 16px; } /* prevents iOS zoom */
+
+    /* Delete section */
+    .delete-section {
+      flex-direction: column;
+      align-items: flex-start;
+      padding: 20px;
+      gap: 14px;
+    }
+    .delete-section .btn { width: 100%; justify-content: center; }
+  }
+
+  /* ── TOAST: full-width on mobile ── */
+  @media (max-width: 600px) {
+    .toast-container {
+      bottom: 16px;
+      left: 16px;
+      right: 16px;
+    }
+    .toast { max-width: 100%; }
+  }
+
+  /* ── PAYMENT MODAL ── */
+  @media (max-width: 600px) {
+    #payment-modal .modal,
+    #delete-modal .modal {
+      padding: 28px 20px 24px;
+      border-radius: 20px 20px 0 0;
+    }
+  }
+
+  /* ── TOUCH TARGETS ── all interactive elements min 44px tall ── */
+  @media (max-width: 600px) {
+    .btn { min-height: 44px; }
+    .upload-tab, .tab-btn, .doc-type-btn { min-height: 44px; }
+    .form-input, .form-select, .text-area, .qa-input { min-height: 48px; }
+    .history-item { min-height: 52px; }
+    .file-remove { min-height: 36px; min-width: 36px; display: flex; align-items: center; justify-content: center; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a class="nav-brand" href="#" onclick="showPage('home')">
+    <img src="data:image/png;base64,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" alt="Nyay AI" style="height:34px;width:auto;display:block;" />
+    <span class="nav-title">Nyay <span>AI</span></span>
+  </a>
+  <div class="nav-actions" id="nav-actions">
+    <button class="btn btn-ghost" onclick="openModal('login')">Login</button>
+    <button class="btn btn-primary" onclick="openModal('register')">Get Started</button>
+  </div>
+</nav>
+
+<!-- ══════════════════════════════════════════ HOME PAGE -->
+<div id="page-home" class="page">
+  <div class="hero">
+    <div class="hero-badge">⚖️ India's AI Legal Assistant</div>
+    <h1 class="hero-title">
+      Legal Documents,<br/><span class="accent">Analysed Instantly</span>
+    </h1>
+    <p class="hero-sub">
+      Upload any legal document in any Indian language. Get an in-depth AI analysis, risk assessment, and plain-language summary -- in seconds.
+    </p>
+    <div class="hero-cta">
+      <button class="btn btn-primary btn-lg" onclick="openModal('register')">Start Free Analysis →</button>
+      <button class="btn btn-ghost btn-lg" onclick="openModal('login')">Sign In</button>
+    </div>
+    <div class="hero-langs">
+      <span style="font-size:12px;color:var(--muted);font-weight:500;">Supports:</span>
+      <span class="lang-pill">हिंदी</span>
+      <span class="lang-pill">தமிழ்</span>
+      <span class="lang-pill">తెలుగు</span>
+      <span class="lang-pill">বাংলা</span>
+      <span class="lang-pill">मराठी</span>
+      <span class="lang-pill">ગુજરાતી</span>
+      <span class="lang-pill">ಕನ್ನಡ</span>
+      <span class="lang-pill">മലയാളം</span>
+      <span class="lang-pill">ਪੰਜਾਬੀ</span>
+      <span class="lang-pill">English</span>
+    </div>
+  </div>
+
+  <div class="features">
+    <div class="feature-card">
+      <div class="feature-icon">📄</div>
+      <h3>Multi-Format Upload</h3>
+      <p>Upload PDFs, images, Word docs, or paste raw text. Supports all major Indian language documents.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🧠</div>
+      <h3>AI-Powered Analysis</h3>
+      <p>Claude AI reviews your document for clauses, risks, obligations, and red flags with legal precision.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📊</div>
+      <h3>Detailed Reports</h3>
+      <p>Get a structured report with risk levels, key clauses, missing elements, and actionable recommendations.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">💬</div>
+      <h3>Ask Questions</h3>
+      <p>After analysis, ask Nyay AI anything about your document. Get instant, contextual answers.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔒</div>
+      <h3>Your Data, Deleted</h3>
+      <p>Once done, permanently delete all your documents and analysis data with one click. Zero retention.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🇮🇳</div>
+      <h3>Indian Law Context</h3>
+      <p>Analysis is grounded in Indian legal frameworks -- IPC, CPC, Transfer of Property Act, and more.</p>
+    </div>
+  </div>
+
+  <div class="pricing-banner">
+    <h2>Simple, Transparent Pricing</h2>
+    <p>No subscription. Pay only when you analyse.</p>
+    <div class="pricing-pills">
+      <div class="pricing-pill">✅ 2 Free Analyses on Signup</div>
+      <div class="pricing-pill highlight">₹49 per analysis after that</div>
+      <div class="pricing-pill">📄 PDF Report Download</div>
+      <div class="pricing-pill">💬 Q&A Included</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════ DASHBOARD -->
+<div id="page-dashboard" class="page">
+  <div style="max-width:1100px;margin:0 auto;padding:40px 24px;">
+    <div class="dash-header">
+      <div class="dash-greeting">
+        <h1 id="dash-greeting-text">नमस्ते, User!</h1>
+        <p id="dash-greeting-sub">Ready to analyze your legal documents?</p>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <div class="credits-badge">
+          ⚡ <span id="credits-display">2 free analyses remaining</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="dash-grid">
+      <!-- LEFT: UPLOAD -->
+      <div>
+        <div class="panel">
+          <div class="panel-header">
+            <span style="font-size:20px;">📎</span>
+            <h2>New Analysis</h2>
+          </div>
+          <div class="panel-body">
+
+            <!-- STEP 1: DOCUMENT TYPE -->
+            <p style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);margin-bottom:10px;">Step 1 -- Select Document Type</p>
+            <div class="doc-type-grid" id="doc-type-grid">
+              <button class="doc-type-btn" data-type="Rental Agreement" onclick="selectDocType(this)">
+                <span class="type-icon">🏠</span>Rental Agreement
+              </button>
+              <button class="doc-type-btn" data-type="Employment Contract" onclick="selectDocType(this)">
+                <span class="type-icon">💼</span>Employment Contract
+              </button>
+              <button class="doc-type-btn" data-type="Sale Deed" onclick="selectDocType(this)">
+                <span class="type-icon">🏗️</span>Sale Deed
+              </button>
+              <button class="doc-type-btn" data-type="Partnership Deed" onclick="selectDocType(this)">
+                <span class="type-icon">🤝</span>Partnership Deed
+              </button>
+              <button class="doc-type-btn" data-type="Loan Agreement" onclick="selectDocType(this)">
+                <span class="type-icon">💰</span>Loan Agreement
+              </button>
+              <button class="doc-type-btn" data-type="NDA / Confidentiality" onclick="selectDocType(this)">
+                <span class="type-icon">🔐</span>NDA
+              </button>
+              <button class="doc-type-btn" data-type="Power of Attorney" onclick="selectDocType(this)">
+                <span class="type-icon">📜</span>Power of Attorney
+              </button>
+              <button class="doc-type-btn" data-type="Will / Testament" onclick="selectDocType(this)">
+                <span class="type-icon">📋</span>Will / Testament
+              </button>
+              <button class="doc-type-btn" data-type="Other Legal Document" onclick="selectDocType(this)">
+                <span class="type-icon">📁</span>Other
+              </button>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- STEP 2: UPLOAD METHOD -->
+            <p style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);margin-bottom:10px;">Step 2 -- Upload Document</p>
+            <div class="upload-tabs">
+              <button class="upload-tab active" onclick="switchUploadTab('file', this)">📄 File / PDF / Image</button>
+              <button class="upload-tab" onclick="switchUploadTab('text', this)">✏️ Paste Text</button>
+            </div>
+
+            <div id="upload-file-area">
+              <div class="drop-zone" id="drop-zone"
+                ondragover="event.preventDefault(); this.classList.add('dragover')"
+                ondragleave="this.classList.remove('dragover')"
+                ondrop="handleDrop(event)">
+                <input type="file" id="file-input" multiple
+                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.txt"
+                  onchange="handleFileSelect(event)" />
+                <div class="drop-icon">☁️</div>
+                <h3>Drop files here or click to browse</h3>
+                <p>Supports: PDF, Images (JPG/PNG), Word Docs, TXT<br/>Multiple files allowed</p>
+              </div>
+              <div class="file-list" id="file-list"></div>
+            </div>
+
+            <div id="upload-text-area" style="display:none;">
+              <textarea class="text-area" id="paste-text"
+                placeholder="Paste your legal document text here...&#10;&#10;आप यहाँ अपना कानूनी दस्तावेज़ का पाठ चिपका सकते हैं..."></textarea>
+            </div>
+
+            <!-- STEP 3: LANGUAGE -->
+            <div class="lang-row">
+              <label>📍 Document Language:</label>
+              <select class="form-select" id="doc-language" style="max-width:200px;">
+                <option value="auto">Auto Detect</option>
+                <option value="English">English</option>
+                <option value="Hindi">हिंदी (Hindi)</option>
+                <option value="Tamil">தமிழ் (Tamil)</option>
+                <option value="Telugu">తెలుగు (Telugu)</option>
+                <option value="Bengali">বাংলা (Bengali)</option>
+                <option value="Marathi">मराठी (Marathi)</option>
+                <option value="Gujarati">ગુજરાતી (Gujarati)</option>
+                <option value="Kannada">ಕನ್ನಡ (Kannada)</option>
+                <option value="Malayalam">മലയാളം (Malayalam)</option>
+                <option value="Punjabi">ਪੰਜਾਬੀ (Punjabi)</option>
+                <option value="Odia">ଓଡ଼ିଆ (Odia)</option>
+                <option value="Urdu">اردو (Urdu)</option>
+              </select>
+            </div>
+
+            <!-- ANALYZE BUTTON -->
+            <div class="analyze-section">
+              <button class="btn btn-primary btn-lg" style="width:100%;" onclick="startAnalysis()" id="analyze-btn">
+                ⚖️ Analyse Document
+              </button>
+              <div class="analysis-progress" id="analysis-progress">
+                <div class="progress-bar-wrap">
+                  <div class="progress-bar" id="progress-bar"></div>
+                </div>
+                <div class="progress-label" id="progress-label">Initialising analysis...</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sidebar removed: analysis panel only -->
+    </div>
+  </div>
+</div>
+
+<div id="history-list" style="display:none;"></div>
+
+<!-- ══════════════════════════════════════════ REPORT PAGE -->
+<div id="page-report" class="page">
+  <div style="max-width:900px;margin:0 auto;padding:40px 24px;">
+    <div class="report-header">
+      <div class="report-meta">
+        <button class="btn btn-ghost btn-sm" onclick="showPage('dashboard')" style="margin-bottom:12px;">← Back to Dashboard</button>
+        <h1 id="report-title">Legal Analysis Report</h1>
+        <p id="report-meta-info">Generated on <span id="report-date"></span> · <span id="report-type-badge"></span></p>
+      </div>
+      <div class="report-actions">
+        <button class="btn btn-outline" onclick="downloadReport()">⬇ Download PDF</button>
+        <button class="btn btn-ghost btn-sm" onclick="scrollToQA()">💬 Ask Question</button>
+      </div>
+    </div>
+
+    <div class="report-disclaimer">
+      ⚠️ <strong>Legal Disclaimer:</strong> This AI-generated analysis is for informational purposes only and does not constitute legal advice. Nyay AI analyses documents based on general Indian legal principles. Please consult a qualified advocate before taking any legal action.
+    </div>
+
+    <div class="report-body">
+      <div class="report-content" id="report-content">
+        <!-- Report rendered here -->
+      </div>
+    </div>
+
+    <!-- Q&A SECTION -->
+    <div class="qa-panel" id="qa-section">
+      <div class="qa-header">
+        <span style="font-size:20px;">💬</span>
+        <div>
+          <h2 style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:700;">Ask About Your Document</h2>
+          <p style="font-size:12px;color:var(--muted);">Ask Nyay AI anything about this document</p>
+        </div>
+      </div>
+      <div class="qa-messages" id="qa-messages">
+        <div class="qa-msg ai">
+          <div class="ai-label">Nyay AI</div>
+          Your document has been analysed. You can now ask me any questions about this document -- clauses, risks, obligations, or anything else you'd like clarified.
+        </div>
+      </div>
+      <div class="qa-input-row">
+        <input class="qa-input" id="qa-input" type="text"
+          placeholder="Ask a question about this document..."
+          onkeydown="if(event.key==='Enter') sendQuestion()" />
+        <button class="btn btn-primary" onclick="sendQuestion()">Send</button>
+      </div>
+    </div>
+
+    <!-- DELETE DATA -->
+    <div class="delete-section">
+      <div>
+        <h3>🗑️ Delete All Data</h3>
+        <p>Permanently delete this document, its analysis, and all Q&A history from our servers. This cannot be undone.</p>
+      </div>
+      <button class="btn btn-danger" onclick="confirmDelete()">Delete Everything</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════ AUTH MODAL -->
+<div class="modal-overlay" id="auth-modal">
+  <div class="modal">
+    <div class="modal-logo">
+      <img src="data:image/png;base64,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" alt="Nyay AI" style="height:64px;width:auto;display:block;margin:0 auto 12px;" />
+      <h2>Nyay AI</h2>
+      <p>Legal Document Analyser</p>
+    </div>
+
+    <div class="tab-row">
+      <button class="tab-btn active" id="tab-login" onclick="switchAuthTab('login')">Sign In</button>
+      <button class="tab-btn" id="tab-register" onclick="switchAuthTab('register')">Register</button>
+    </div>
+
+    <!-- LOGIN -->
+    <div id="auth-login">
+      <div class="form-group">
+        <label class="form-label">Email Address</label>
+        <input class="form-input" id="login-email" type="email" placeholder="you@example.com" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input class="form-input" id="login-password" type="password" placeholder="••••••••" />
+      </div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="handleLogin()" id="login-btn">
+        Sign In
+      </button>
+      <p class="modal-note">
+        Don't have an account? <a href="#" onclick="switchAuthTab('register')" style="color:var(--gold);text-decoration:none;">Register free →</a>
+      </p>
+    </div>
+
+    <!-- REGISTER -->
+    <div id="auth-register" style="display:none;">
+      <div class="two-col">
+        <div class="form-group">
+          <label class="form-label">First Name</label>
+          <input class="form-input" id="reg-fname" type="text" placeholder="Raj" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Last Name</label>
+          <input class="form-input" id="reg-lname" type="text" placeholder="Kumar" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email Address</label>
+        <input class="form-input" id="reg-email" type="email" placeholder="you@example.com" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input class="form-input" id="reg-password" type="password" placeholder="Min. 8 characters" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Preferred Language</label>
+        <select class="form-select" id="reg-language">
+          <option value="English">English</option>
+          <option value="Hindi">हिंदी (Hindi)</option>
+          <option value="Tamil">தமிழ் (Tamil)</option>
+          <option value="Telugu">తెలుగు (Telugu)</option>
+          <option value="Bengali">বাংলা (Bengali)</option>
+          <option value="Marathi">मराठी (Marathi)</option>
+          <option value="Gujarati">ગુજરાતી (Gujarati)</option>
+          <option value="Kannada">ಕನ್ನಡ (Kannada)</option>
+          <option value="Malayalam">മലയാളം (Malayalam)</option>
+        </select>
+      </div>
+      <div style="background:var(--gold-pale);border:1px solid rgba(184,134,11,0.3);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--muted);margin-bottom:16px;">
+        🎁 You get <strong style="color:var(--gold);">2 free analyses</strong> on registration. After that, ₹49 per analysis.
+      </div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="handleRegister()" id="register-btn">
+        Create Account -- Free
+      </button>
+      <p class="modal-note">
+        Already have an account? <a href="#" onclick="switchAuthTab('login')" style="color:var(--gold);text-decoration:none;">Sign in →</a>
+      </p>
+    </div>
+
+    <button class="btn btn-ghost btn-sm" style="width:100%;justify-content:center;margin-top:12px;" onclick="closeModal()">Cancel</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════ PAYMENT MODAL -->
+<div class="modal-overlay" id="payment-modal">
+  <div class="modal">
+    <div class="modal-logo">
+      <div style="font-size:40px;margin-bottom:8px;">💳</div>
+      <h2>Analysis Fee</h2>
+      <p>Your free analyses are used up</p>
+    </div>
+    <div class="payment-note">
+      This analysis will cost <strong>₹49</strong>. After payment, your document will be immediately analysed.
+    </div>
+    <!-- Cashfree payment status message -->
+    <div id="cashfree-status" style="display:none;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:14px;"></div>
+    <div style="background:var(--cream);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:13px;color:var(--muted);margin-bottom:16px;display:flex;align-items:center;gap:10px;">
+      <span style="font-size:20px;">🔒</span>
+      <span>Payments secured by <strong style="color:var(--ink);">Cashfree</strong> — UPI, Cards, Net Banking &amp; Wallets accepted.</span>
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button class="btn btn-ghost" style="flex:1;justify-content:center;" onclick="closePaymentModal()">Cancel</button>
+      <button class="btn btn-primary" style="flex:1;justify-content:center;" id="cashfree-pay-btn" onclick="processPayment()">
+        <span id="cashfree-btn-text">Pay ₹49 →</span>
+        <span id="cashfree-btn-loader" style="display:none;">⏳ Processing…</span>
+      </button>
+    </div>
+    <p style="font-size:11px;color:var(--muted);text-align:center;margin-top:12px;line-height:1.5;">
+      By paying you agree to our Terms of Service. Refunds within 7 days for technical failures.
+    </p>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════ DELETE CONFIRM MODAL -->
+<div class="modal-overlay" id="delete-modal">
+  <div class="modal" style="max-width:380px;">
+    <div style="text-align:center;margin-bottom:20px;">
+      <div style="font-size:48px;margin-bottom:12px;">🗑️</div>
+      <h2 style="font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:700;color:var(--rust);">Delete All Data?</h2>
+      <p style="font-size:14px;color:var(--muted);margin-top:8px;line-height:1.6;">
+        This will permanently delete your document, the analysis report, and all Q&A history. This action cannot be undone.
+      </p>
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button class="btn btn-ghost" style="flex:1;justify-content:center;" onclick="document.getElementById('delete-modal').classList.remove('open')">Cancel</button>
+      <button class="btn btn-danger" style="flex:1;justify-content:center;" onclick="deleteAllData()">Yes, Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-container" id="toast-container"></div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+// ══════════════════════════════════════════════════════════
+// CONFIG -- ⚡ Replace ALL three values before deploying
+// ══════════════════════════════════════════════════════════
+const CONFIG = {
+  ANTHROPIC_API_KEY: '',                                               // ← No longer needed here; key lives in server env
+  SUPABASE_URL:      'https://vkrcetcxtjoehdbyirlk.supabase.co',       // ← Supabase Project Settings > API
+  SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrcmNldGN4dGpvZWhkYnlpcmxrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5MTA4NDYsImV4cCI6MjA5NTQ4Njg0Nn0.LIRwcDpgYc_zSmy1KzX0GzBqLoFNjB2mLKSWmK_2QvE'  // ← Supabase Project Settings > API
+};
+
+// ── Supabase client (waits for CDN to load) ────────────────
+let db = null;
+let _dbInitDone = false;
+
+function getDB() {
+  if (db) return db;
+  if (window.supabase && typeof window.supabase.createClient === 'function') {
+    db = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+    if (!_dbInitDone) {
+      _dbInitDone = true;
+      // Hook auth listener now that client exists
+      initSupabaseAuth();
+    }
+    return db;
+  }
+  return null;
+}
+
+// Poll until Supabase CDN is ready, then init
+function waitForSupabase(maxWaitMs) {
+  maxWaitMs = maxWaitMs || 10000;
+  var start = Date.now();
+  var interval = setInterval(function() {
+    if (getDB()) {
+      clearInterval(interval);
+      console.log('[Nyay AI] Supabase client initialised ✅');
+    } else if (Date.now() - start > maxWaitMs) {
+      clearInterval(interval);
+      console.warn('[Nyay AI] Supabase failed to initialise after ' + maxWaitMs + 'ms -- auth/DB disabled');
+    }
+  }, 100);
+}
+waitForSupabase();
+
+// ══════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════
+let appState = {
+  currentUser:         null,   // Supabase auth.User object
+  profile:             null,   // profiles row
+  freeCredits:         2,
+  selectedDocType:     null,
+  uploadedFiles:       [],
+  uploadMode:          'file',
+  currentReport:       null,
+  currentAnalysisId:   null,   // UUID of the current analyses row
+  currentDocumentText: null,
+  analyses:            []
+};
+
+// ══════════════════════════════════════════════════════════
+// PAGE NAVIGATION
+// ══════════════════════════════════════════════════════════
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(function(p) {
+    p.classList.remove('active');
+    p.style.display = 'none';
+  });
+  var target = document.getElementById('page-' + name);
+  if (target) {
+    target.classList.add('active');
+    target.style.display = '';
+  }
+  window.scrollTo(0, 0);
+}
+
+// On load: show home by default (will be overridden by auth check)
+document.addEventListener('DOMContentLoaded', function() {
+  showPage('home');
+});
+
+// ══════════════════════════════════════════════════════════
+// MODAL
+// ══════════════════════════════════════════════════════════
+function openModal(tab) {
+  document.getElementById('auth-modal').classList.add('open');
+  switchAuthTab(tab);
+}
+function closeModal() {
+  document.getElementById('auth-modal').classList.remove('open');
+}
+function switchAuthTab(tab) {
+  document.getElementById('auth-login').style.display    = tab === 'login'    ? 'block' : 'none';
+  document.getElementById('auth-register').style.display = tab === 'register' ? 'block' : 'none';
+  document.getElementById('tab-login').classList.toggle('active', tab === 'login');
+  document.getElementById('tab-register').classList.toggle('active', tab === 'register');
+}
+
+// ══════════════════════════════════════════════════════════
+// AUTH -- Supabase-wired
+// ══════════════════════════════════════════════════════════
+async function handleLogin() {
+  const email    = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  if (!email || !password) { showToast('Please fill in all fields', 'error'); return; }
+
+  const btn = document.getElementById('login-btn');
+  btn.innerHTML = '<span class="spinner"></span> Signing in...';
+  btn.disabled = true;
+
+  if (!getDB()) { showToast('Service loading, please try again in a moment.', 'info'); btn.innerHTML = 'Sign In'; btn.disabled = false; return; }
+  const { data, error } = await getDB().auth.signInWithPassword({ email, password });
+  if (error) {
+    showToast(error.message, 'error');
+    btn.innerHTML = 'Sign In'; btn.disabled = false;
+    return;
+  }
+  await afterAuthSuccess(data.user);
+  btn.innerHTML = 'Sign In'; btn.disabled = false;
+}
+
+async function handleRegister() {
+  const fname    = document.getElementById('reg-fname').value.trim();
+  const lname    = document.getElementById('reg-lname').value.trim();
+  const email    = document.getElementById('reg-email').value.trim();
+  const password = document.getElementById('reg-password').value;
+  const lang     = document.getElementById('reg-language').value;
+
+  if (!fname || !email || !password) { showToast('Please fill in all required fields', 'error'); return; }
+  if (password.length < 8)           { showToast('Password must be at least 8 characters', 'error'); return; }
+
+  const btn = document.getElementById('register-btn');
+  btn.innerHTML = '<span class="spinner"></span> Creating account...';
+  btn.disabled = true;
+
+  if (!getDB()) { showToast('Service loading, please try again in a moment.', 'info'); btn.innerHTML = 'Create Account -- Free'; btn.disabled = false; return; }
+  const { data, error } = await getDB().auth.signUp({
+    email,
+    password,
+    options: { data: { full_name: fname + ' ' + lname, preferred_language: lang } }
+  });
+  if (error) {
+    showToast(error.message, 'error');
+    btn.innerHTML = 'Create Account -- Free'; btn.disabled = false;
+    return;
+  }
+  // Check if email confirmation is required
+  if (data.user && !data.session) {
+    showToast('Check your email to confirm your account, then sign in.', 'info');
+    switchAuthTab('login');
+  } else if (data.user) {
+    await afterAuthSuccess(data.user);
+  }
+  btn.innerHTML = 'Create Account -- Free'; btn.disabled = false;
+}
+
+async function afterAuthSuccess(user, silent) {
+  appState.currentUser = user;
+
+  // Load profile -- never block login if this fails
+  try {
+    const client = getDB();
+    if (client) {
+      const profilePromise = client.from('profiles').select('*').eq('id', user.id).single();
+      const timeout = new Promise(resolve => setTimeout(() => resolve({ data: null, error: 'timeout' }), 5000));
+      const { data: profile, error } = await Promise.race([profilePromise, timeout]);
+      if (!error && profile) {
+        appState.profile     = profile;
+        appState.freeCredits = profile.free_credits != null ? profile.free_credits : 2;
+      } else {
+        console.warn('[Nyay AI] Profile fetch issue:', error);
+        // Upsert profile manually in case trigger didn't fire
+        await client.from('profiles').upsert({
+          id: user.id,
+          full_name: (user.user_metadata && user.user_metadata.full_name) || user.email,
+          preferred_language: (user.user_metadata && user.user_metadata.preferred_language) || 'en',
+          free_credits: 2
+        });
+      }
+    }
+  } catch(e) {
+    console.warn('[Nyay AI] Profile error (non-fatal):', e);
+  }
+
+  // Load analyses -- never block login if this fails
+  try { await loadAnalysesHistory(); } catch(e) {
+    console.warn('[Nyay AI] History load error (non-fatal):', e);
+  }
+
+  // Always proceed to dashboard
+  loginSuccess(silent);
+}
+
+function loginSuccess(silent) {
+  closeModal();
+  if (!silent) showToast('Welcome to Nyay AI! 🎉', 'success');
+  updateNavForUser();
+  updateDashboard();
+  showPage('dashboard');
+}
+
+function updateNavForUser() {
+  const nav = document.getElementById('nav-actions');
+  const name = appState.profile?.full_name || appState.currentUser?.email || 'User';
+  nav.innerHTML = `
+    <span style="font-size:13px;color:var(--muted);">${appState.currentUser.email}</span>
+    <button class="btn btn-ghost btn-sm" onclick="handleLogout()">Sign Out</button>
+  `;
+}
+
+async function handleLogout() {
+  await getDB().auth.signOut();
+  appState.currentUser       = null;
+  appState.profile           = null;
+  appState.analyses          = [];
+  appState.freeCredits       = 2;
+  appState.currentReport     = null;
+  appState.currentAnalysisId = null;
+  document.getElementById('nav-actions').innerHTML = `
+    <button class="btn btn-ghost" onclick="openModal('login')">Login</button>
+    <button class="btn btn-primary" onclick="openModal('register')">Get Started</button>
+  `;
+  showPage('home');
+  showToast('Signed out successfully', 'info');
+}
+
+function updateDashboard() {
+  const name = appState.profile?.full_name || appState.currentUser?.email?.split('@')[0] || 'User';
+  document.getElementById('dash-greeting-text').textContent = `नमस्ते, ${name}!`;
+  updateCreditsDisplay();
+  renderHistory();
+}
+
+function updateCreditsDisplay() {
+  const c  = appState.freeCredits;
+  const el = document.getElementById('credits-display');
+  el.textContent = c > 0
+    ? `${c} free ${c === 1 ? 'analysis' : 'analyses'} remaining`
+    : '₹49 per analysis';
+}
+
+// Restore session -- called only after Supabase CDN has finished loading
+function initSupabaseAuth() {
+  const client = getDB();
+  if (!client) return; // shouldn't happen, but guard anyway
+  client.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'SIGNED_IN' && session?.user && !appState.currentUser) {
+      await afterAuthSuccess(session.user);
+    }
+    if (event === 'SIGNED_OUT') {
+      appState.currentUser = null;
+      appState.profile     = null;
+    }
+  });
+  // Also check for an existing session (e.g. page refresh)
+  client.auth.getSession().then(({ data }) => {
+    if (data?.session?.user && !appState.currentUser) {
+      afterAuthSuccess(data.session.user, true); // true = silent restore
+    }
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+// DOCUMENT TYPE SELECTION
+// ══════════════════════════════════════════════════════════
+function selectDocType(btn) {
+  document.querySelectorAll('.doc-type-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  appState.selectedDocType = btn.dataset.type;
+}
+
+// ══════════════════════════════════════════════════════════
+// UPLOAD
+// ══════════════════════════════════════════════════════════
+function switchUploadTab(mode, btn) {
+  appState.uploadMode = mode;
+  document.querySelectorAll('.upload-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('upload-file-area').style.display = mode === 'file' ? 'block' : 'none';
+  document.getElementById('upload-text-area').style.display = mode === 'text' ? 'block' : 'none';
+}
+
+function handleFileSelect(e) { addFiles(Array.from(e.target.files)); }
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('drop-zone').classList.remove('dragover');
+  addFiles(Array.from(e.dataTransfer.files));
+}
+function addFiles(files) {
+  files.forEach(f => { if (!appState.uploadedFiles.find(x => x.name === f.name)) appState.uploadedFiles.push(f); });
+  renderFileList();
+}
+function renderFileList() {
+  const list = document.getElementById('file-list');
+  list.innerHTML = '';
+  appState.uploadedFiles.forEach((f, i) => {
+    const size = f.size > 1024*1024 ? (f.size/1024/1024).toFixed(1)+'MB' : Math.round(f.size/1024)+'KB';
+    const icon = f.type.includes('pdf') ? '📄' : f.type.includes('image') ? '🖼️' : '📝';
+    list.innerHTML += `
+      <div class="file-item">
+        <span>${icon}</span>
+        <span class="file-name">${f.name}</span>
+        <span class="file-size">${size}</span>
+        <button class="file-remove" onclick="removeFile(${i})">×</button>
+      </div>
+    `;
+  });
+}
+function removeFile(i) { appState.uploadedFiles.splice(i, 1); renderFileList(); }
+
+// ══════════════════════════════════════════════════════════
+// FILE → BASE64 + TEXT EXTRACTION
+// ══════════════════════════════════════════════════════════
+async function extractTextFromFiles(files) {
+  const parts = [];
+  for (const file of files) {
+    if (file.type === 'text/plain') {
+      parts.push(await file.text());
+    } else if (file.type.includes('image') || file.type === 'application/pdf') {
+      const b64 = await fileToBase64(file);
+      parts.push({ type: 'image', data: b64, mimeType: file.type });
+    } else {
+      parts.push(await file.text());
+    }
+  }
+  return parts;
+}
+function fileToBase64(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload  = () => res(r.result.split(',')[1]);
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+// SUPABASE STORAGE -- upload a single File object
+// Path format: {user_id}/{timestamp}_{filename}
+// Returns the storage path or null on error
+// ══════════════════════════════════════════════════════════
+async function uploadFileToStorage(file) {
+  if (!appState.currentUser) return null;
+  const path = `${appState.currentUser.id}/${Date.now()}_${file.name}`;
+  const { error } = await getDB().storage.from('documents').upload(path, file, {
+    cacheControl: '3600',
+    upsert: false
+  });
+  if (error) { console.error('Storage upload error:', error); return null; }
+  return path;
+}
+
+// ══════════════════════════════════════════════════════════
+// CLAUDE API -- ANALYSIS
+// ══════════════════════════════════════════════════════════
+async function callClaudeAnalysis(documentContent, docType, language) {
+  const langInstruction = language && language !== 'auto'
+    ? `IMPORTANT: Write the ENTIRE report in ${language}. If the document is in ${language}, analyze and respond in ${language}.`
+    : `Detect the language of the document and write the ENTIRE report in that same language.`;
+
+  const systemPrompt = `You are Nyay AI, an expert Indian legal document analyst with deep knowledge of:
+- Indian Contract Act, 1872
+- Transfer of Property Act, 1882
+- Registration Act, 1908
+- Specific Relief Act, 1963
+- Indian Stamp Act, 1899
+- Consumer Protection Act, 2019
+- Labour Laws (Factories Act, Payment of Wages Act, ID Act)
+- Real Estate (Regulation and Development) Act, 2016 (RERA)
+- Information Technology Act, 2000
+- Negotiable Instruments Act, 1881
+- Indian Partnership Act, 1932
+- Hindu Succession Act, Limitation Act
+
+${langInstruction}
+
+You produce structured, comprehensive legal analysis reports. Always be accurate, professional, and highlight risks clearly. Mark HIGH RISK issues prominently. Never give legal advice but provide thorough factual analysis.
+
+OUTPUT FORMAT (use exactly these section headings):
+
+## दस्तावेज़ सारांश / Document Summary
+Brief overview of what the document is about.
+
+## प्रमुख पक्ष / Key Parties
+List all parties involved with their roles.
+
+## मुख्य प्रावधान / Key Provisions
+List and explain the main terms, conditions, and clauses.
+
+## अधिकार और दायित्व / Rights & Obligations
+What each party is entitled to and obligated to do.
+
+## जोखिम विश्लेषण / Risk Analysis
+Categorize risks as:
+[HIGH RISK] - Issues that urgently need attention
+[MEDIUM RISK] - Issues to be aware of
+[LOW RISK] - Minor concerns
+
+## कानूनी अनुपालन / Legal Compliance
+Which Indian laws apply and whether the document complies.
+
+## लापता खंड / Missing Clauses
+Important clauses that should be present but are absent.
+
+## सिफारिशें / Recommendations
+Specific actionable recommendations before signing.
+
+## समग्र मूल्यांकन / Overall Assessment
+A final verdict: PROCEED / PROCEED WITH CAUTION / DO NOT SIGN -- with brief justification.`;
+
+  const userContent = [];
+  if (Array.isArray(documentContent)) {
+    documentContent.forEach(item => {
+      if (typeof item === 'string') {
+        userContent.push({ type: 'text', text: item });
+      } else if (item.type === 'image') {
+        userContent.push({ type: 'image', source: { type: 'base64', media_type: item.mimeType, data: item.data } });
+      }
+    });
+  } else {
+    userContent.push({ type: 'text', text: documentContent });
+  }
+  userContent.push({ type: 'text', text: `\n\nDocument Type: ${docType || 'General Legal Document'}\nPlease analyze this document thoroughly and provide a complete report following the format specified.` });
+
+  const response = await fetch('https://nyayai-final.onrender.com/api/claude', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 4000,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: userContent }]
+    })
+  });
+  if (!response.ok) { const e = await response.json(); throw new Error(e.error?.message || 'Claude API error'); }
+  const data = await response.json();
+  return data.content[0].text;
+}
+
+// ══════════════════════════════════════════════════════════
+// CLAUDE API -- Q&A
+// ══════════════════════════════════════════════════════════
+async function callClaudeQA(question, documentText, reportText, docType) {
+  const response = await fetch('https://nyayai-final.onrender.com/api/claude', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1000,
+      system: `You are Nyay AI, an expert Indian legal document assistant. You have already analyzed a ${docType || 'legal'} document and produced a report. Answer questions about it clearly and accurately. Respond in the same language the user asks in. Always note that your answers are informational only and not legal advice.`,
+      messages: [{
+        role: 'user',
+        content: `Here is the document that was analyzed:\n\n${documentText || '[Document uploaded as image/PDF]'}\n\nHere is the analysis report:\n\n${reportText}\n\nUser question: ${question}`
+      }]
+    })
+  });
+  const data = await response.json();
+  return data.content[0].text;
+}
+
+// ══════════════════════════════════════════════════════════
+// ANALYSIS FLOW -- with Supabase persistence
+// ══════════════════════════════════════════════════════════
+async function startAnalysis() {
+  if (!appState.currentUser) { openModal('login'); return; }
+  if (!appState.selectedDocType) { showToast('Please select a document type first', 'error'); return; }
+
+  let hasContent = false;
+  if (appState.uploadMode === 'file' && appState.uploadedFiles.length > 0) hasContent = true;
+  if (appState.uploadMode === 'text' && document.getElementById('paste-text').value.trim()) hasContent = true;
+  if (!hasContent) { showToast('Please upload a document or paste text', 'error'); return; }
+
+  // ── Credit gate ─────────────────────────────────────────
+  if (appState.freeCredits <= 0) {
+    document.getElementById('payment-modal').classList.add('open'); return;
+  }
+
+  // ── Deduct credit atomically via DB function ─────────────
+  const { data: creditOk, error: creditError } = await getDB().rpc('deduct_credit', {
+    p_user_id: appState.currentUser.id
+  });
+  if (creditError || !creditOk) {
+    showToast('Could not deduct credit. Please try again.', 'error'); return;
+  }
+  appState.freeCredits = Math.max(0, appState.freeCredits - 1);
+  updateCreditsDisplay();
+
+  const btn = document.getElementById('analyze-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Analysing...';
+
+  const progress = document.getElementById('analysis-progress');
+  const bar      = document.getElementById('progress-bar');
+  const label    = document.getElementById('progress-label');
+  progress.style.display = 'block';
+
+  const steps = [
+    [10, 'Reading document...'],
+    [25, 'Uploading to secure storage...'],
+    [45, 'Extracting text and content...'],
+    [65, 'Applying Indian legal frameworks...'],
+    [82, 'Identifying risks and clauses...'],
+    [95, 'Generating structured report...'],
+    [100, 'Saving analysis...']
+  ];
+  let stepIdx = 0;
+  const progressInterval = setInterval(() => {
+    if (stepIdx < steps.length) {
+      bar.style.width = steps[stepIdx][0] + '%';
+      label.textContent = steps[stepIdx][1];
+      stepIdx++;
+    } else {
+      clearInterval(progressInterval);
+    }
+  }, 900);
+
+  try {
+    let documentContent;
+    let storagePath  = null;
+    let docText      = null;
+    const language   = document.getElementById('doc-language').value;
+
+    if (appState.uploadMode === 'text') {
+      documentContent = document.getElementById('paste-text').value.trim();
+      docText         = documentContent;
+      appState.currentDocumentText = documentContent;
+    } else {
+      // Upload first file to Supabase Storage (non-blocking if it fails)
+      if (appState.uploadedFiles.length > 0) {
+        storagePath = await uploadFileToStorage(appState.uploadedFiles[0]);
+      }
+      const extracted = await extractTextFromFiles(appState.uploadedFiles);
+      const textParts = extracted.filter(x => typeof x === 'string');
+      docText         = textParts.join('\n\n');
+      appState.currentDocumentText = docText;
+      documentContent = extracted;
+    }
+
+    // ── Call Claude ─────────────────────────────────────────
+    const report = await callClaudeAnalysis(documentContent, appState.selectedDocType, language);
+
+    clearInterval(progressInterval);
+    bar.style.width   = '100%';
+    label.textContent = 'Saving analysis...';
+
+    // ── Persist to Supabase ─────────────────────────────────
+    const { data: savedRow, error: saveError } = await db
+      .from('analyses')
+      .insert({
+        user_id:         appState.currentUser.id,
+        doc_type:        appState.selectedDocType,
+        doc_language:    language,
+        report_markdown: report,
+        doc_text:        docText,
+        storage_path:    storagePath
+      })
+      .select()
+      .single();
+
+    if (saveError) {
+      console.error('Save error:', saveError);
+      showToast('Analysis done (save failed -- see console)', 'error');
+    }
+
+    label.textContent = 'Analysis complete!';
+
+    const entry = {
+      id:           savedRow?.id || Date.now(),
+      type:         appState.selectedDocType,
+      date:         new Date().toLocaleDateString('en-IN'),
+      report,
+      docText,
+      storagePath
+    };
+    appState.currentReport     = entry;
+    appState.currentAnalysisId = savedRow?.id || null;
+    appState.analyses.unshift(entry);
+    renderHistory();
+    showReport(entry);
+
+  } catch (err) {
+    clearInterval(progressInterval);
+    showToast('Analysis failed: ' + err.message, 'error');
+    console.error(err);
+    // Refund credit on failure
+    await getDB().from('profiles').update({ free_credits: appState.freeCredits + 1 }).eq('id', appState.currentUser.id);
+    appState.freeCredits++;
+    updateCreditsDisplay();
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '⚖️ Analyse Document';
+  setTimeout(() => { progress.style.display = 'none'; bar.style.width = '0%'; }, 1500);
+}
+
+// ══════════════════════════════════════════════════════════
+// RENDER REPORT
+// ══════════════════════════════════════════════════════════
+function showReport(entry) {
+  document.getElementById('report-title').textContent      = entry.type + ' -- Analysis Report';
+  document.getElementById('report-date').textContent       = entry.date;
+  document.getElementById('report-type-badge').textContent = entry.type;
+  document.getElementById('report-content').innerHTML      = formatReport(entry.report);
+  document.getElementById('qa-messages').innerHTML = `
+    <div class="qa-msg ai">
+      <div class="ai-label">Nyay AI</div>
+      Your ${entry.type} has been analysed. Ask me anything about this document -- specific clauses, risks, obligations, what to watch out for, or anything else.
+    </div>
+  `;
+  showPage('report');
+}
+
+function formatReport(text) {
+  return text
+    .replace(/## ([^\n]+)/g, '<h2>$1</h2>')
+    .replace(/### ([^\n]+)/g, '<h3>$1</h3>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/\[HIGH RISK\]([^\n]+)/g,   '<div class="risk-high">⛔ <strong>HIGH RISK:</strong>$1</div>')
+    .replace(/\[MEDIUM RISK\]([^\n]+)/g, '<div class="risk-medium">⚠️ <strong>MEDIUM RISK:</strong>$1</div>')
+    .replace(/\[LOW RISK\]([^\n]+)/g,    '<div class="risk-low">✅ <strong>LOW RISK:</strong>$1</div>')
+    .replace(/^- (.+)$/gm, '<li>$1</li>')
+    .replace(/(<li>.*<\/li>\n?)+/g, m => `<ul>${m}</ul>`)
+    .replace(/\n\n/g, '</p><p>')
+    .replace(/^(?!<[hupd])/gm, '')
+    .replace(/^<p><\/p>$/gm, '');
+}
+
+// ══════════════════════════════════════════════════════════
+// Q&A -- with Supabase persistence
+// ══════════════════════════════════════════════════════════
+async function sendQuestion() {
+  const input = document.getElementById('qa-input');
+  const q     = input.value.trim();
+  if (!q) return;
+
+  const msgs = document.getElementById('qa-messages');
+  msgs.innerHTML += `<div class="qa-msg user">${q}</div>`;
+  input.value = '';
+  msgs.innerHTML += `<div class="qa-msg ai" id="qa-loading"><div class="ai-label">Nyay AI</div><span class="spinner" style="border-color:rgba(0,0,0,0.2);border-top-color:var(--gold);width:14px;height:14px;"></span> Thinking...</div>`;
+  msgs.scrollTop = msgs.scrollHeight;
+
+  try {
+    const answer = await callClaudeQA(
+      q,
+      appState.currentReport?.docText,
+      appState.currentReport?.report,
+      appState.currentReport?.type
+    );
+    document.getElementById('qa-loading').innerHTML = `<div class="ai-label">Nyay AI</div>${answer.replace(/\n/g, '<br/>')}`;
+
+    // Persist Q&A to Supabase
+    if (appState.currentAnalysisId && appState.currentUser) {
+      await getDB().from('qa_messages').insert([
+        { analysis_id: appState.currentAnalysisId, user_id: appState.currentUser.id, role: 'user',      content: q      },
+        { analysis_id: appState.currentAnalysisId, user_id: appState.currentUser.id, role: 'assistant', content: answer }
+      ]);
+    }
+  } catch (err) {
+    document.getElementById('qa-loading').innerHTML = `<div class="ai-label">Nyay AI</div>Sorry, I encountered an error. Please try again.`;
+  }
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function scrollToQA() {
+  document.getElementById('qa-section').scrollIntoView({ behavior: 'smooth' });
+}
+
+// ══════════════════════════════════════════════════════════
+// PDF DOWNLOAD
+// ══════════════════════════════════════════════════════════
+function downloadReport() {
+  if (!appState.currentReport) return;
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+
+  doc.setFillColor(61, 82, 102);
+  doc.rect(0, 0, 210, 30, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(20); doc.text('NYAY AI', 14, 13);
+  doc.setFontSize(9);  doc.text('Legal Document Analysis Report', 14, 20);
+  doc.text('nyay.ai  |  Powered by Claude AI', 14, 26);
+
+  doc.setTextColor(40, 40, 40);
+  doc.setFontSize(14); doc.text(appState.currentReport.type + ' -- Analysis Report', 14, 42);
+  doc.setFontSize(9);  doc.setTextColor(120, 110, 100);
+  doc.text('Generated: ' + appState.currentReport.date, 14, 49);
+
+  doc.setFillColor(245, 236, 208); doc.rect(14, 54, 182, 12, 'F');
+  doc.setTextColor(100, 80, 20);   doc.setFontSize(8);
+  doc.text('DISCLAIMER: This AI-generated report is for informational purposes only and does not constitute legal advice.', 17, 61);
+  doc.text('Consult a qualified advocate before taking legal action.', 17, 66);
+
+  const plainText = appState.currentReport.report
+    .replace(/##+ /g, '\n').replace(/\*\*/g, '')
+    .replace(/\[HIGH RISK\]/g, '⛔ HIGH RISK:').replace(/\[MEDIUM RISK\]/g, '⚠️ MEDIUM RISK:').replace(/\[LOW RISK\]/g, '✅ LOW RISK:');
+
+  doc.setTextColor(30, 30, 30); doc.setFontSize(10);
+  const lines = doc.splitTextToSize(plainText, 182);
+  let y = 76;
+  lines.forEach(line => {
+    if (y > 270) { doc.addPage(); y = 20; }
+    if (line.startsWith('\n') || line.trim() === '') { y += 4; return; }
+    doc.text(line, 14, y); y += 5.5;
+  });
+
+  const pageCount = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i); doc.setFontSize(8); doc.setTextColor(180, 170, 160);
+    doc.text(`Page ${i} of ${pageCount}  |  Nyay AI -- nyay.ai  |  Not Legal Advice`, 14, 290);
+  }
+  doc.save(`Nyay_AI_Report_${appState.currentReport.type.replace(/\s+/g,'_')}_${Date.now()}.pdf`);
+  showToast('Report downloaded! 📄', 'success');
+}
+
+// ══════════════════════════════════════════════════════════
+// HISTORY -- loaded from Supabase
+// ══════════════════════════════════════════════════════════
+async function loadAnalysesHistory() {
+  if (!appState.currentUser) return;
+  const { data, error } = await db
+    .from('analyses')
+    .select('id, doc_type, created_at, report_markdown, doc_text, storage_path')
+    .eq('user_id', appState.currentUser.id)
+    .order('created_at', { ascending: false })
+    .limit(10);
+
+  if (error) { console.error('History load error:', error); return; }
+  appState.analyses = (data || []).map(row => ({
+    id:          row.id,
+    type:        row.doc_type,
+    date:        new Date(row.created_at).toLocaleDateString('en-IN'),
+    report:      row.report_markdown,
+    docText:     row.doc_text,
+    storagePath: row.storage_path
+  }));
+  renderHistory();
+}
+
+function renderHistory() {
+  const list = document.getElementById('history-list');
+  if (!appState.analyses.length) {
+    list.innerHTML = '<div class="empty-state">No analyses yet.<br/>Upload your first document above.</div>'; return;
+  }
+  list.innerHTML = appState.analyses.slice(0, 5).map(a => `
+    <div class="history-item" onclick="loadHistoryItem('${a.id}')">
+      <span class="hist-icon">📑</span>
+      <div class="hist-info">
+        <div class="hist-name">${a.type}</div>
+        <div class="hist-date">${a.date}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function loadHistoryItem(id) {
+  const entry = appState.analyses.find(a => String(a.id) === String(id));
+  if (entry) { appState.currentReport = entry; appState.currentAnalysisId = entry.id; showReport(entry); }
+}
+
+// ══════════════════════════════════════════════════════════
+// PAYMENT — Cashfree Integration
+// ══════════════════════════════════════════════════════════
+function closePaymentModal() {
+  document.getElementById('payment-modal').classList.remove('open');
+  // Reset button state
+  document.getElementById('cashfree-pay-btn').disabled = false;
+  document.getElementById('cashfree-btn-text').style.display = '';
+  document.getElementById('cashfree-btn-loader').style.display = 'none';
+  document.getElementById('cashfree-status').style.display = 'none';
+}
+
+function showCashfreeStatus(msg, type) {
+  // type: 'success' | 'error' | 'info'
+  const el = document.getElementById('cashfree-status');
+  const colors = {
+    success: { bg: '#f0fdf4', border: '#86efac', color: '#166534' },
+    error:   { bg: '#fef2f2', border: '#fca5a5', color: '#991b1b' },
+    info:    { bg: 'var(--gold-pale)', border: 'rgba(184,134,11,0.3)', color: 'var(--gold)' }
+  };
+  const c = colors[type] || colors.info;
+  el.style.cssText = `display:block;background:${c.bg};border:1px solid ${c.border};color:${c.color};padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:14px;`;
+  el.textContent = msg;
+}
+
+async function processPayment() {
+  // ── CASHFREE INTEGRATION ─────────────────────────────────
+  //
+  // HOW IT WORKS (server-side required):
+  // 1. Your backend creates a Cashfree order via their Orders API
+  //    POST https://api.cashfree.com/pg/orders
+  //    Returns: { payment_session_id, order_id }
+  //
+  // 2. Frontend uses payment_session_id to open Cashfree checkout
+  //
+  // 3. On payment success, Cashfree calls your webhook; your server:
+  //    a. Verifies the signature
+  //    b. Inserts a row into the `payments` Supabase table
+  //    c. Increments free_credits by 1 (or flags the pending analysis)
+  //
+  // CASHFREE CONFIG — fill in your keys:
+  const CASHFREE_CONFIG = {
+    mode: 'sandbox',                               // ← Change to 'production' when going live
+    createOrderEndpoint: '/api/payment/create-order',
+    verifyEndpoint:      '/api/payment/verify'
+  };
+  // ─────────────────────────────────────────────────────────
+
+  const payBtn = document.getElementById('cashfree-pay-btn');
+  payBtn.disabled = true;
+  document.getElementById('cashfree-btn-text').style.display = 'none';
+  document.getElementById('cashfree-btn-loader').style.display = '';
+  showCashfreeStatus('Initialising payment…', 'info');
+
+  try {
+    // Step 1: Create order on your backend
+    const orderRes = await fetch(CASHFREE_CONFIG.createOrderEndpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId:        appState.currentUser?.id,
+        customerName:  appState.profile?.full_name || 'Nyay AI User',
+        customerEmail: appState.currentUser?.email,
+        customerPhone: appState.profile?.phone || '9999999999'
+      })
+    });
+
+    if (!orderRes.ok) throw new Error('Could not create order. Please try again.');
+    const { payment_session_id, order_id } = await orderRes.json();
+
+    if (!payment_session_id) throw new Error('Invalid response from server.');
+
+    showCashfreeStatus('Opening payment window…', 'info');
+
+    // Step 2: Initialise Cashfree SDK and open checkout
+    const cashfree = await window.Cashfree({
+      mode: 'production'  // ← Change to 'production' when going live
+    });
+
+    const checkoutOptions = {
+      paymentSessionId: payment_session_id,
+      redirectTarget:   '_modal'   // Opens in-page modal (no redirect)
+    };
+
+    const result = await cashfree.checkout(checkoutOptions);
+
+    // Step 3: Handle result
+    if (result.error) {
+      // Payment cancelled or failed
+      showCashfreeStatus('Payment failed: ' + (result.error.message || 'Unknown error'), 'error');
+      payBtn.disabled = false;
+      document.getElementById('cashfree-btn-text').style.display = '';
+      document.getElementById('cashfree-btn-loader').style.display = 'none';
+      return;
+    }
+
+    if (result.paymentDetails) {
+      // Payment was attempted — verify on server
+      showCashfreeStatus('Verifying payment…', 'info');
+
+      const verifyRes = await fetch(`${CASHFREE_CONFIG.verifyEndpoint}/${order_id}`, {
+        method: 'GET'
+      });
+
+      if (verifyRes.ok) {
+        const { success } = await verifyRes.json();
+        if (success) {
+          appState.freeCredits++;
+          updateCreditsDisplay();
+          showToast('Payment successful! Starting analysis… 🎉', 'success');
+          closePaymentModal();
+          startAnalysis();
+        } else {
+          showCashfreeStatus('Payment verification failed. Contact support with Order ID: ' + order_id, 'error');
+          payBtn.disabled = false;
+          document.getElementById('cashfree-btn-text').style.display = '';
+          document.getElementById('cashfree-btn-loader').style.display = 'none';
+        }
+      } else {
+        throw new Error('Verification request failed.');
+      }
+    }
+
+  } catch (err) {
+    console.error('[Cashfree] Payment error:', err);
+    showCashfreeStatus('⚠️ ' + (err.message || 'Payment could not be completed. Please try again.'), 'error');
+    payBtn.disabled = false;
+    document.getElementById('cashfree-btn-text').style.display = '';
+    document.getElementById('cashfree-btn-loader').style.display = 'none';
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// DELETE -- wipes Supabase data + storage
+// ══════════════════════════════════════════════════════════
+function confirmDelete() { document.getElementById('delete-modal').classList.add('open'); }
+
+async function deleteAllData() {
+  document.getElementById('delete-modal').classList.remove('open');
+
+  if (appState.currentUser) {
+    // Delete storage files
+    const { data: storageList } = await getDB().storage
+      .from('documents')
+      .list(appState.currentUser.id);
+
+    if (storageList && storageList.length > 0) {
+      const paths = storageList.map(f => `${appState.currentUser.id}/${f.name}`);
+      await getDB().storage.from('documents').remove(paths);
+    }
+
+    // Wipe DB rows via helper function
+    await getDB().rpc('delete_user_data', { p_user_id: appState.currentUser.id });
+  }
+
+  // Reset local state
+  appState.currentReport       = null;
+  appState.currentAnalysisId   = null;
+  appState.currentDocumentText = null;
+  appState.uploadedFiles       = [];
+  appState.analyses            = [];
+  document.getElementById('file-list').innerHTML   = '';
+  document.getElementById('paste-text').value      = '';
+  document.querySelectorAll('.doc-type-btn').forEach(b => b.classList.remove('selected'));
+  appState.selectedDocType = null;
+  renderHistory();
+  showToast('All data permanently deleted 🗑️', 'success');
+  showPage('dashboard');
+}
+
+// ══════════════════════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════════════════════
+function showToast(msg, type = 'info') {
+  const container = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  const icons = { success: '✅', error: '❌', info: 'ℹ️' };
+  t.innerHTML = `<span>${icons[type] || 'ℹ️'}</span> ${msg}`;
+  container.appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
+
+// ══════════════════════════════════════════════════════════
+// CLOSE MODALS ON OVERLAY CLICK
+// ══════════════════════════════════════════════════════════
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('open'); });
+});
+
+console.log('%c Nyay AI v2 -- Supabase-wired', 'color:#b8860b;font-size:16px;font-weight:bold;');
+console.log('%c Fill in CONFIG.ANTHROPIC_API_KEY, SUPABASE_URL, SUPABASE_ANON_KEY to activate', 'color:#8b3a2a;');
+
+
+// ── Expose functions to global scope for onclick handlers ──
+window.showPage = showPage;
+window.openModal = openModal;
+window.closeModal = closeModal;
+window.switchAuthTab = switchAuthTab;
+window.handleLogin = handleLogin;
+window.handleRegister = handleRegister;
+window.handleLogout = handleLogout;
+window.selectDocType = selectDocType;
+window.switchUploadTab = switchUploadTab;
+window.handleFileSelect = handleFileSelect;
+window.handleDrop = handleDrop;
+window.removeFile = removeFile;
+window.startAnalysis = startAnalysis;
+window.sendQuestion = sendQuestion;
+window.scrollToQA = scrollToQA;
+window.downloadReport = downloadReport;
+window.loadHistoryItem = loadHistoryItem;
+window.closePaymentModal = closePaymentModal;
+window.processPayment = processPayment;
+window.confirmDelete = confirmDelete;
+window.deleteAllData = deleteAllData;
+window.showToast = showToast;
+
+}); // end DOMContentLoaded
+</script>
+</body>
+</html>
